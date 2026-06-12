@@ -1,0 +1,15 @@
+{
+  "name": "codealpha_ecommercestore",
+  "version": "1.0.0",
+  "description": "CodeAlpha Ecommerce Store Monorepo",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
