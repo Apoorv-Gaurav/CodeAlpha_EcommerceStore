@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Order = require('./models/Order');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -105,6 +106,14 @@ app.get('/api/orders/:userId', async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+});
+
+// ─── Serve Static React App ───
+// We serve this outside of /api routes
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
