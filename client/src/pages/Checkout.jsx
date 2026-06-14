@@ -78,7 +78,8 @@ const Checkout = () => {
           return;
         }
 
-        const amount = getFinalTotal() * 100; // in paise
+        // Razorpay requires amount in paise as an integer, with a minimum of 100 paise (₹1).
+        const amount = Math.max(100, Math.round(getFinalTotal() * 100)); 
 
         // 1. Create order on backend
         const result = await fetch('/api/create-order', {
