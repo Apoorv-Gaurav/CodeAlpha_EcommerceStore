@@ -129,6 +129,18 @@ app.get('/api/orders/:userId', async (req, res) => {
   }
 });
 
+app.delete('/api/orders/:orderId', async (req, res) => {
+  try {
+    const deletedOrder = await Order.findByIdAndDelete(req.params.orderId);
+    if (!deletedOrder) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+    res.json({ message: 'Order removed successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error: ' + err.message });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
 });

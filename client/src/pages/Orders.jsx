@@ -18,6 +18,24 @@ const Orders = () => {
       .catch(() => setLoading(false));
   }, [user]);
 
+  const handleRemoveOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to remove this order from your history?')) return;
+    
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        setOrders(prev => prev.filter(order => order._id !== orderId));
+      } else {
+        alert('Failed to remove order.');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
+  };
+
   if (!user) {
     return (
       <div className="orders-page" style={{ textAlign: 'center' }}>
@@ -70,8 +88,14 @@ const Orders = () => {
                 ))}
               </div>
 
-              <div className="order-footer">
-                Total: <strong>₹{order.total}</strong>
+              <div className="order-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Total: <strong>₹{order.total}</strong></span>
+                <button 
+                  onClick={() => handleRemoveOrder(order._id)}
+                  style={{ background: '#ff4d4f', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}
+                >
+                  Remove
+                </button>
               </div>
             </div>
           ))}

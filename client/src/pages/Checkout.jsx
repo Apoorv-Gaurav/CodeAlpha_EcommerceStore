@@ -266,6 +266,10 @@ const Checkout = () => {
               <span>₹{getFinalTotal()}</span>
             </div>
             
+            <div className="fun-warning" style={{ background: '#fff3cd', color: '#856404', padding: '1rem', borderRadius: '8px', margin: '1rem 0', fontSize: '0.9rem', border: '1px solid #ffeeba', lineHeight: '1.4' }}>
+              ⚠️ <strong>Fun Warning:</strong> This order might take centuries to reach. Extreme patience is required!
+            </div>
+            
             <button 
               type="submit" 
               form="checkout-form" 
