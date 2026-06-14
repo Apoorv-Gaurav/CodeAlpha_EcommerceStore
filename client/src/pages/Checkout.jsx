@@ -64,7 +64,8 @@ const Checkout = () => {
           clearCart();
           navigate('/success');
         } else {
-          alert('Failed to place order. Please try again.');
+          const errData = await res.json();
+          alert('Failed to place order: ' + (errData.message || 'Unknown error'));
         }
         setIsProcessing(false);
       } else {
@@ -134,7 +135,8 @@ const Checkout = () => {
                 clearCart();
                 navigate('/success');
               } else {
-                alert('Order saved failed after payment! Please contact support.');
+                const errData = await orderRes.json();
+                alert('Order saved failed after payment! Error: ' + (errData.message || 'Unknown error') + '. Please contact support.');
               }
             } else {
               alert('Payment Verification Failed!');

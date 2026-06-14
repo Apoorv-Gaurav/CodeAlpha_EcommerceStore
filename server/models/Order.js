@@ -18,6 +18,20 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  address: {
+    name: String,
+    phone: String,
+    street: String,
+    city: String,
+    pincode: String
+  },
+  paymentMethod: {
+    type: String,
+    default: 'COD'
+  },
+  razorpay_payment_id: {
+    type: String
+  },
   status: {
     type: String,
     default: 'Confirmed',

@@ -95,16 +95,24 @@ app.post('/api/login', async (req, res) => {
 // ─── Orders API (now uses MongoDB!) ───
 app.post('/api/orders', async (req, res) => {
   try {
-    const { userId, items, total } = req.body;
+    const { userId, items, total, address, paymentMethod, razorpay_payment_id } = req.body;
     if (!userId || !items || items.length === 0) {
       return res.status(400).json({ message: 'Invalid order.' });
     }
 
     // Save order to MongoDB
-    const order = await Order.create({ userId, items, total });
+    const order = await Order.create({ 
+      userId, 
+      items, 
+      total, 
+      address, 
+      paymentMethod, 
+      razorpay_payment_id 
+    });
 
     res.status(201).json(order);
   } catch (err) {
+    console.error('Order saving error:', err);
     res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
