@@ -15,10 +15,19 @@ app.use(cors());
 app.use(express.json());
 
 // ─── Razorpay Initialization ───
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+let razorpay;
+try {
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  } else {
+    console.warn("⚠️ Razorpay environment variables are missing. Payments will not work.");
+  }
+} catch (error) {
+  console.error("Razorpay initialization error:", error.message);
+}
 
 // ─── MongoDB Connection ───
 mongoose.connect(process.env.MONGODB_URI)
@@ -119,6 +128,10 @@ app.get('/api/health', (req, res) => {
 // ─── Payment API (Razorpay) ───
 app.post('/api/create-order', async (req, res) => {
   try {
+    if (!razorpay) {
+      return res.status(500).json({ message: 'Razorpay is not configured on the server.' });
+    }
+
     const { amount, receipt } = req.body;
     
     if (!amount || amount < 100) {
