@@ -27,12 +27,13 @@ const Checkout = () => {
   });
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isOrderSuccessful, setIsOrderSuccessful] = useState(false);
 
   if (!user) {
     return <Navigate to="/login" />;
   }
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !isOrderSuccessful) {
     return <Navigate to="/cart" />;
   }
 
@@ -61,6 +62,7 @@ const Checkout = () => {
           })
         });
         if (res.ok) {
+          setIsOrderSuccessful(true);
           clearCart();
           navigate('/success');
         } else {
@@ -133,6 +135,7 @@ const Checkout = () => {
                 })
               });
               if (orderRes.ok) {
+                setIsOrderSuccessful(true);
                 clearCart();
                 navigate('/success');
               } else {
