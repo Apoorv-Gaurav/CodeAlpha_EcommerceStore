@@ -19,8 +19,8 @@ let razorpay;
 try {
   if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
     razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: process.env.RAZORPAY_KEY_ID.trim(),
+      key_secret: process.env.RAZORPAY_KEY_SECRET.trim(),
     });
   } else {
     console.warn("⚠️ Razorpay environment variables are missing. Payments will not work.");
@@ -161,18 +161,21 @@ app.post('/api/verify-payment', (req, res) => {
       return res.status(400).json({ message: 'Missing fields' });
     }
 
+    const secret = process.env.RAZORPAY_KEY_SECRET ? process.env.RAZORPAY_KEY_SECRET.trim() : '';
     const sign = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSign = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', secret)
       .update(sign.toString())
       .digest('hex');
 
     if (razorpay_signature === expectedSign) {
       return res.status(200).json({ message: 'Payment verified successfully' });
     } else {
+      console.error('Signature mismatch!', { expectedSign, razorpay_signature });
       return res.status(400).json({ message: 'Invalid signature sent!' });
     }
   } catch (error) {
+    console.error('Verification error:', error);
     res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
