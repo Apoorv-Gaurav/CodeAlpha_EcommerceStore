@@ -3,6 +3,16 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const Checkout = () => {
   const { cartItems, getCartTotal, getDiscountAmount, getFinalTotal, clearCart } = useCart();
   const { user } = useAuth();
@@ -34,30 +44,126 @@ const Checkout = () => {
     e.preventDefault();
     setIsProcessing(true);
 
-    // Simulate fake payment processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user._id,
-          items: cartItems,
-          total: getFinalTotal(),
-          address: formData,
-          paymentMethod
-        })
-      });
-      if (res.ok) {
-        clearCart();
-        navigate('/success');
+      if (paymentMethod === 'COD') {
+        // Simulate fake payment processing delay for COD
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            items: cartItems,
+            total: getFinalTotal(),
+            address: formData,
+            paymentMethod
+          })
+        });
+        if (res.ok) {
+          clearCart();
+          navigate('/success');
+        } else {
+          alert('Failed to place order. Please try again.');
+        }
+        setIsProcessing(false);
       } else {
-        alert('Failed to place order. Please try again.');
+        // Razorpay Payment for UPI and Cards
+        const res = await loadRazorpayScript();
+
+        if (!res) {
+          alert('Razorpay SDK failed to load. Are you online?');
+          setIsProcessing(false);
+          return;
+        }
+
+        const amount = getFinalTotal() * 100; // in paise
+
+        // 1. Create order on backend
+        const result = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount }),
+        });
+        
+        if (!result.ok) {
+          alert('Failed to create payment order.');
+          setIsProcessing(false);
+          return;
+        }
+        
+        const orderData = await result.json();
+
+        // 2. Open Razorpay checkout
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID, 
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Snack-X',
+          description: 'Payment for order',
+          order_id: orderData.id,
+          handler: async function (response) {
+            // 3. Verify Payment
+            const data = {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            };
+
+            const verifyResult = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+            });
+
+            if (verifyResult.ok) {
+              // 4. Place the order in db after successful verification
+              const orderRes = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: user._id,
+                  items: cartItems,
+                  total: getFinalTotal(),
+                  address: formData,
+                  paymentMethod: 'Online Payment (Razorpay)',
+                  razorpay_payment_id: response.razorpay_payment_id
+                })
+              });
+              if (orderRes.ok) {
+                clearCart();
+                navigate('/success');
+              } else {
+                alert('Order saved failed after payment! Please contact support.');
+              }
+            } else {
+              alert('Payment Verification Failed!');
+            }
+            setIsProcessing(false);
+          },
+          prefill: {
+            name: formData.name,
+            contact: formData.phone,
+          },
+          theme: {
+            color: '#3399cc',
+          },
+          modal: {
+            ondismiss: function() {
+              setIsProcessing(false);
+            }
+          }
+        };
+
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.on('payment.failed', function (response){
+          alert('Payment failed! Reason: ' + response.error.description);
+          setIsProcessing(false);
+        });
+        paymentObject.open();
       }
-    } catch {
+    } catch (err) {
       alert('Network error. Please try again.');
-    } finally {
       setIsProcessing(false);
     }
   };
